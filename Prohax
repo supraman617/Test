@@ -1,0 +1,101 @@
+-- // Rayfield GUI Loader local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({ Name = "ProHax DOORS v2", LoadingTitle = "ProHax", LoadingSubtitle = "Full ESP + Notifier", ConfigurationSaving = { Enabled = false, }, Discord = { Enabled = false }, KeySystem = false, })
+
+-- // Tabs & Sections local TabPlayer = Window:CreateTab("Player", 4483362458) TabPlayer:CreateSection("Movement")
+
+local TabVisual = Window:CreateTab("Visual", 4483362458) TabVisual:CreateSection("ESP & Lighting")
+
+-- // High Speed TabPlayer:CreateToggle({ Name = "High Speed (45)", CurrentValue = false, Flag = "HighSpeedToggle", Callback = function(state) local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid") if hum then hum.WalkSpeed = state and 45 or 16 end end, }) game.Players.LocalPlayer.CharacterAdded:Connect(function(char) repeat wait() until char:FindFirstChildOfClass("Humanoid") if Rayfield.Flags.HighSpeedToggle then char:FindFirstChildOfClass("Humanoid").WalkSpeed = 45 end end)
+
+-- // Fullbright TabVisual:CreateToggle({ Name = "Fullbright", CurrentValue = false, Flag = "FullbrightToggle", Callback = function(state) local l = game:GetService("Lighting") if state then l.Brightness = 2 l.ClockTime = 12 l.FogEnd = 100000 l.GlobalShadows = false l.OutdoorAmbient = Color3.fromRGB(128,128,128) else l.Brightness = 1 l.ClockTime = 14 l.FogEnd = 1000 l.GlobalShadows = true l.OutdoorAmbient = Color3.fromRGB(112,112,112) end end, })
+
+-- // ESP Setup local espEnabled = false local espFolder = Instance.new("Folder", game.CoreGui) espFolder.Name = "ProHaxESP"
+
+TabVisual:CreateToggle({ Name = "ESP (Entity, Key, Door)", CurrentValue = false, Flag = "ESPTextToggle", Callback = function(state) espEnabled = state if not state then espFolder:ClearAllChildren() end end, })
+
+-- ESP Update Loop task.spawn(function() while task.wait(1) do if not espEnabled then continue end espFolder:ClearAllChildren()
+
+local allObjects = {}
+
+    for _, obj in pairs(workspace:GetDescendants()) do
+        table.insert(allObjects, obj)
+    end
+    if workspace:FindFirstChild("CurrentRooms") then
+        for _, obj in pairs(workspace.CurrentRooms:GetDescendants()) do
+            table.insert(allObjects, obj)
+        end
+    end
+
+    for _, obj in pairs(allObjects) do
+        local tracked = {
+            RushMoving = true,
+            AmbushMoving = true,
+            BackdoorRush = true,
+            GlitchRush = true,
+            GlitchAmbush = true,
+            ["A-60"] = true,
+        }
+
+        if obj:IsA("Model") and tracked[obj.Name] then
+            local part = obj:FindFirstChild("RushNew") or obj:FindFirstChildWhichIsA("BasePart")
+            if part then
+                local esp = Instance.new("BillboardGui", espFolder)
+                esp.Adornee = part
+                esp.Size = UDim2.new(0, 100, 0, 40)
+                esp.AlwaysOnTop = true
+
+                local label = Instance.new("TextLabel", esp)
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextStrokeTransparency = 0
+                label.Text = "[" .. obj.Name .. "]"
+                label.TextColor3 =
+                    obj.Name == "RushMoving" and Color3.fromRGB(255, 0, 0) or
+                    obj.Name == "AmbushMoving" and Color3.fromRGB(255, 85, 255) or
+                    obj.Name == "BackdoorRush" and Color3.fromRGB(255, 165, 0) or
+                    obj.Name == "GlitchRush" and Color3.fromRGB(0, 255, 255) or
+                    obj.Name == "GlitchAmbush" and Color3.fromRGB(255, 255, 255) or
+                    obj.Name == "A-60" and Color3.fromRGB(255, 0, 255) or
+                    Color3.new(1, 1, 1)
+            end
+        end
+
+        if obj:IsA("Model") and obj.Name == "KeyObtain" and obj:FindFirstChild("Handle") then
+            local esp = Instance.new("BillboardGui", espFolder)
+            esp.Adornee = obj:FindFirstChild("Handle")
+            esp.Size = UDim2.new(0, 100, 0, 40)
+            esp.AlwaysOnTop = true
+            local label = Instance.new("TextLabel", esp)
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.Text = "[KEY]"
+            label.BackgroundTransparency = 1
+            label.TextColor3 = Color3.fromRGB(255, 255, 0)
+            label.TextStrokeTransparency = 0
+        end
+
+        if obj:IsA("Model") and obj.Name:match("^Door%d+$") and obj:FindFirstChild("Door") then
+            local esp = Instance.new("BillboardGui", espFolder)
+            esp.Adornee = obj:FindFirstChild("Door")
+            esp.Size = UDim2.new(0, 100, 0, 40)
+            esp.AlwaysOnTop = true
+            local label = Instance.new("TextLabel", esp)
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.Text = "[DOOR] " .. obj.Name
+            label.BackgroundTransparency = 1
+            label.TextColor3 = Color3.fromRGB(0, 255, 0)
+            label.TextStrokeTransparency = 0
+        end
+    end
+end
+
+end)
+
+-- Entity Notifier TabVisual:CreateToggle({ Name = "Entity Notifier", CurrentValue = false, Flag = "EntityNotifierToggle", Callback = function(state) _G.NotifierEnabled = state end, })
+
+local detectedEntities = {}
+
+task.spawn(function() while task.wait(0.5) do if not _G.NotifierEnabled then detectedEntities = {} continue end for _, v in pairs(workspace:GetChildren()) do if v:IsA("Model") then local name = v.Name if (name == "RushMoving" or name == "AmbushMoving" or name == "BackdoorRush" or name == "GlitchRush" or name == "GlitchAmbush" or name == "A-60") and not detectedEntities[name] then detectedEntities[name] = true Rayfield:Notify({ Title = "Entity Detected!", Content = "\226\152\256 " .. name .. " has spawned!", Duration = 6, }) end end end end end)
+
+Rayfield:Notify({ Title = "ProHax Loaded!", Content = "ESP, Notifier, Speed & Fullbright Siap!", Duration = 6, })
+
